@@ -90,11 +90,8 @@ def get_strategy_results(quotes_df:pl.DataFrame, strategy_dict:dict)->pl.DataFra
     
     return strategy_result_df
 
-def run(strategy_dict:dict)->None:
+def run(strategy_dict:dict, quotes_df:pl.DataFrame)->None:
     
-    # Read in data
-    quotes_df = import_historical_quote_data()
-
     # Run strategy to determine investment dates
     strategy_dates_df = get_strategy_results(quotes_df, strategy_dict)
     
@@ -103,18 +100,5 @@ def run(strategy_dict:dict)->None:
     
     # Calculate average and median annualized returns
     average_annualized_return_strategy = round(strategy_result_df['annualized_return'].mean(),2)
-    median_annualized_return_strategy = round(strategy_result_df['annualized_return'].median(),2)
-    
-    print(f'Average annualized return of strategy {strategy_dict}: {average_annualized_return_strategy}%')
-    print(f'Median annualized return of strategy {strategy_dict}: {median_annualized_return_strategy}%')
         
-    return (average_annualized_return_strategy, median_annualized_return_strategy)
-
-if __name__ == '__main__':
-    perc = [0,2,5]
-    for p in perc:
-        strategy = {
-            'strategy':'down_percent_pure', 
-            'percent':p,
-            }
-        run(strategy)
+    return average_annualized_return_strategy
