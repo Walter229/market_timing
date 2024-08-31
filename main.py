@@ -4,19 +4,24 @@ from config import THOUSAND_SEP, DATE_FORMAT
 from trading_strategy import TradingStrategy
 
 
-def import_historical_quote_data()->pl.DataFrame:
-    date_cols = ['Date']
-    price_cols = ['Close', 'Open', 'High', 'Low']
-    quotes_df = pl.read_csv('historical_data_msci_world.csv').rename({'Price':'Close'}).select(date_cols+price_cols)
-    #quotes_df = pl.read_csv('/Users/clemens/Desktop/Test.csv', separator=';').rename({'Price':'Close'}).select(date_cols+price_cols).drop_nulls()
+def import_historical_quote_data(path='daily_msci_world_2012.csv')->pl.DataFrame:
+    
+    # Read in df
+    required_cols = ['Date', 'Close']
+    optional_price_cols = ['Open', 'High', 'Low']
+    quotes_df = pl.read_csv(path, infer_schema_length=0).select(required_cols)
+    
+    # For optional price cols ('Open', 'High', 'Low'), check if available, else copy from 'Close'
+    quotes_df = quotes_df.with_columns([
+        pl.col('Close').alias(col) for col in optional_price_cols if col not in quotes_df.columns
+        ])
     
     # Cast columns to their correct data types
-    for date_col in date_cols:
-        quotes_df = quotes_df.with_columns(pl.col(date_col).str.to_date(format='%m/%d/%Y'))
-    for price_col in price_cols:
-        quotes_df = quotes_df.with_columns(
-        pl.col(price_col).str.replace(THOUSAND_SEP, '').cast(pl.Float32)
-    )
+    date_format='%m/%d/%Y'
+    quotes_df = quotes_df.with_columns(pl.col('Date').str.to_date(format=date_format))
+    quotes_df = quotes_df.with_columns([
+        pl.col(price_col).str.replace(THOUSAND_SEP, '').cast(pl.Float64) for price_col in ['Close']+optional_price_cols
+    ])
     return quotes_df
 
 def calculate_total_return_from_df(quotes_df:pl.DataFrame, date_df:pl.DataFrame, price_type='Close')->pl.DataFrame:
