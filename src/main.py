@@ -1,7 +1,7 @@
 import polars as pl
 
 from config import THOUSAND_SEP, DATE_FORMAT
-from trading_strategy import TradingStrategy
+from src.trading_strategy import TradingStrategy
 
 
 def import_historical_quote_data(path='daily_msci_world_2012.csv')->pl.DataFrame:
@@ -9,19 +9,27 @@ def import_historical_quote_data(path='daily_msci_world_2012.csv')->pl.DataFrame
     # Read in df
     required_cols = ['Date', 'Close']
     optional_price_cols = ['Open', 'High', 'Low']
-    quotes_df = pl.read_csv(path, infer_schema_length=0).select(required_cols)
+    all_cols = required_cols + optional_price_cols
+    quotes_df = pl.read_csv(path, infer_schema_length=0)
     
     # For optional price cols ('Open', 'High', 'Low'), check if available, else copy from 'Close'
     quotes_df = quotes_df.with_columns([
         pl.col('Close').alias(col) for col in optional_price_cols if col not in quotes_df.columns
         ])
+    quotes_df = quotes_df.select(all_cols)
     
     # Cast columns to their correct data types
-    date_format='%m/%d/%Y'
-    quotes_df = quotes_df.with_columns(pl.col('Date').str.to_date(format=date_format))
+    quotes_df = quotes_df.with_columns(pl.col('Date').str.to_date(format=DATE_FORMAT))
     quotes_df = quotes_df.with_columns([
         pl.col(price_col).str.replace(THOUSAND_SEP, '').cast(pl.Float64) for price_col in ['Close']+optional_price_cols
     ])
+    
+    # Normalize prices (set first value to 100)
+    normalization_factor = 100 / quotes_df.filter(pl.col('Date') == pl.col('Date').min())['Close'][0]
+    quotes_df = quotes_df.with_columns(
+        [pl.col(col).mul(normalization_factor) for col in ['Close']+optional_price_cols]    
+    )
+    
     return quotes_df
 
 def calculate_total_return_from_df(quotes_df:pl.DataFrame, date_df:pl.DataFrame, price_type='Close')->pl.DataFrame:

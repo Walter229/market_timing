@@ -1,9 +1,9 @@
+import altair as alt
 import polars as pl
 import streamlit as st
 
-import main
+import src.main as main
 
-@st.cache_data
 def run_strategy(strategy_dict:dict, _quote_df:pl.DataFrame)->float:
     average_annualized_return = main.run(strategy_dict, _quote_df)
     return average_annualized_return
@@ -11,15 +11,24 @@ def run_strategy(strategy_dict:dict, _quote_df:pl.DataFrame)->float:
 st.title('Time in the market vs timing the market!')
 
 # Visualize data
-quote_data = main.import_historical_quote_data()
+path = 'monthly_msci_world_1979.csv'
+quote_data = main.import_historical_quote_data(path)
 
 # Add possibility to slice the date range
 min_year = quote_data['Date'].min().year
 max_year = quote_data['Date'].max().year
 values = st.slider("Date range to consider",min_year, max_year,(min_year, max_year), key='date_tuple')
+
+# Filter dataset according to date range chosen in slider
 quote_data = quote_data.filter((pl.col('Date').dt.year() >= st.session_state['date_tuple'][0])
                                & (pl.col('Date').dt.year() <= st.session_state['date_tuple'][1]))
-st.line_chart(quote_data, x="Date", y="Close", y_label='MSCI World Index Level')
+
+# Plot line chart
+c = alt.Chart(quote_data).mark_line().encode(
+    alt.X('Date'),
+    alt.Y('Close').scale(zero=False).title('MSCI World Index Level (normalized)')
+    )
+st.altair_chart(c, use_container_width=True)
 
 # Add instructions
 st.info('''
@@ -27,7 +36,7 @@ st.info('''
         For now, you have the possibility to wait for the market to first fall for x-% before you invest.
         Optionally, you can also specify a maximum time you would want to hold back your investment, before you
         end up investing anyways (even if the market did not fall enough according to your input).
-        ''', icon="ℹ️")
+        ''')
 
 # Choose strategy
 strategy_chosen = st.radio('Choose investment strategy:',
