@@ -103,7 +103,25 @@ def get_strategy_results(quotes_df:pl.DataFrame, strategy_dict:dict)->pl.DataFra
     
     return strategy_result_df
 
-def run(strategy_dict:dict, quotes_df:pl.DataFrame)->None:
+def calculate_non_invested_percentage(strategy_result_df:pl.DataFrame)->float:
+    
+    strategy_result_df = strategy_result_df.with_columns([
+        (pl.col('end_date') == pl.col('investment_date')).alias('not_invested')
+    ])
+    
+    # Accound for last day (would always be counted as "not invested")
+    number_dates_not_invested = strategy_result_df['not_invested'].sum() - 1
+    total_number_dates = strategy_result_df['not_invested'].count() -1
+    
+    # Prevent 0 division cases (if always invested)
+    if number_dates_not_invested <= 0:
+        return 0.0
+    
+    non_invested_perc = round((number_dates_not_invested/total_number_dates)*100,2)
+    
+    return non_invested_perc
+
+def run(strategy_dict:dict, quotes_df:pl.DataFrame)->dict:
     
     # Run strategy to determine investment dates
     strategy_dates_df = get_strategy_results(quotes_df, strategy_dict)
@@ -111,7 +129,20 @@ def run(strategy_dict:dict, quotes_df:pl.DataFrame)->None:
     # Calculate returns
     strategy_result_df = calculate_total_return_from_df(quotes_df, strategy_dates_df, price_type='Close')
     
-    # Calculate average and median annualized returns
+    # Calculate average annualized returns
     average_annualized_return_strategy = round(strategy_result_df['annualized_return'].mean(),2)
         
-    return average_annualized_return_strategy
+    # Calculate average waiting time
+    average_days_waited = int(round(strategy_result_df['days_waited_to_invest'].mean(),0))
+    
+    # Calculate % of cases that did not invest at all over the time
+    perc_not_invested = calculate_non_invested_percentage(strategy_result_df)
+    
+    # Compile results in dict
+    result_dict = {
+        'average_annualized_return':average_annualized_return_strategy,
+        'average_days_waited':average_days_waited,
+        'perc_not_invested':perc_not_invested,
+    }
+    
+    return result_dict
