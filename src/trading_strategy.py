@@ -2,7 +2,7 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 import polars as pl
 
-import utils
+from src import utils
 from config import DATE_FORMAT, MONTH_DAYS
 
 class TradingStrategy():
