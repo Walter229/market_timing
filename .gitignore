@@ -2,3 +2,5 @@
 __pycache__
 *.pyc
 test.py
+.vscode
+.DS_Store
