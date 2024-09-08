@@ -131,6 +131,10 @@ def run(strategy_dict:dict, quotes_df:pl.DataFrame)->dict:
     
     # Calculate average annualized returns
     average_annualized_return_strategy = round(strategy_result_df['annualized_return'].mean(),2)
+    
+    # Calculate 95%-CI of returns
+    bottom_pctile = round(strategy_result_df['annualized_return'].quantile(0.025),2)
+    top_pctile = round(strategy_result_df['annualized_return'].quantile(0.975),2)
         
     # Calculate average waiting time
     average_days_waited = int(round(strategy_result_df['days_waited_to_invest'].mean(),0))
@@ -142,6 +146,9 @@ def run(strategy_dict:dict, quotes_df:pl.DataFrame)->dict:
     result_dict = {
         'average_annualized_return':average_annualized_return_strategy,
         'average_days_waited':average_days_waited,
+        'perc_not_invested':perc_not_invested,
+        'bottom_pctile':bottom_pctile,
+        'top_pctile':top_pctile,
         'perc_not_invested':perc_not_invested,
     }
     
