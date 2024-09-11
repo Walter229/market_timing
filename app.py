@@ -7,10 +7,7 @@ from data.texts import GermanTextStorage, EnglishTextStorage
 
 @st.cache_data
 def run_strategy(strategy_dict:dict)->dict:
-    quote_df = main.import_historical_quote_data(strategy_dict['file'])
-    quote_df = quote_df.filter((pl.col('Date').dt.year() >= strategy_dict['min_year'])
-                               & (pl.col('Date').dt.year() <= strategy_dict['max_year']))
-    result_dict = main.run(strategy_dict, quote_df)
+    result_dict = main.run(strategy_dict)
     return result_dict
 
 # Read in texts according to language set
@@ -64,11 +61,26 @@ st.altair_chart(c, use_container_width=True)
 st.info(text_store.instructions)
 
 # USER INTERACTION: Choose strategy
-strategy_chosen = st.radio(text_store.strategy_choice_label,
+left, right = st.columns(2, vertical_alignment="top")
+strategy_chosen = left.radio(text_store.strategy_choice_label,
                            [text_store.strategy_1_name, text_store.strategy_2_name],
                            captions=[
         text_store.strategy_1_description,
-        text_store.strategy_1_description,])
+        text_store.strategy_2_description,])
+
+investment_horizon_mapping = {
+    f'5 {text_store.years}':5,
+    f'10 {text_store.years}':10,
+    f'20 {text_store.years}':20,
+    'max':0,
+}
+# USER INTERACTION: Choose investment horizon
+default_year_index = list(investment_horizon_mapping.values()).index(10)
+investment_horizon_choice = right.selectbox(
+    text_store.investment_horizon,
+    list(investment_horizon_mapping.keys()),
+    index=default_year_index)
+investment_horizon = investment_horizon_mapping[investment_horizon_choice]
 
 # Get strategy inputs from user
 match strategy_chosen:
@@ -90,22 +102,21 @@ strategy_dict = {
     'strategy':strategy,
     'months':max_months,
     'percent':down_percent,
+    'investment_horizon':investment_horizon
     }
 
 # USER INTERACTION: Upon clicking button, run strategy
-run_strategy_button = st.button('Run strategy')
+run_strategy_button = st.button(text_store.run_button_text)
 if run_strategy_button:
     result_dict = run_strategy(strategy_dict)
 
     # Display results: 
     # TODO: Highlight results
-    st.write((text_store.average_return_text + str(result_dict["average_annualized_return"]) + '% '
+    st.write((text_store.average_return_text + str(result_dict["average_annualized_return"]) + '%'
             + text_store.confidence_interval_part_1 + str(result_dict["bottom_pctile"]) + '% ' 
             + text_store.confidence_interval_part_2 + str(result_dict["top_pctile"]) + '%]'))
     st.write(text_store.average_days_text + str(result_dict["average_days_waited"]))
     st.write(text_store.not_invested_share_text + str(result_dict["perc_not_invested"]) + '%')
-    
-    # TODO: Add option to set investment horizon (in years)
     
     # TODO: Add option to use Cost-Average investing in x parts every x months
     

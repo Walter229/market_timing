@@ -12,11 +12,15 @@ class TextStorage():
     strategy_2_description:str
     down_percent_description:str
     max_months_description:str
+    investment_horizon:str
+    years:str
     average_return_text:str
     confidence_interval_part_1:str
     confidence_interval_part_2:str
     average_days_text:str
     not_invested_share_text:str
+    run_button_text:str
+
             
 class EnglishTextStorage(TextStorage):
     def __init__(self) -> None:
@@ -39,11 +43,14 @@ class EnglishTextStorage(TextStorage):
             invest anyway)"""
         self.down_percent_description = 'How much should the market fall compared to the initial index level before you invest (in %)?'
         self.max_months_description = 'How many months do you want to wait at most before investing?'
+        self.investment_horizon = 'Investment horizon'
+        self.years = 'years'
         self.average_return_text = 'Average return (per year) of your strategy: '
         self.confidence_interval_part_1 = ' [95% of returns between '
         self.confidence_interval_part_2 = ' and '
         self.average_days_text = 'Average number of days waited before investing: '
         self.not_invested_share_text = 'Share of cases that did not invest within set period: '
+        self.run_button_text = 'Run strategy'
         
 class GermanTextStorage(TextStorage):
     def __init__(self) -> None:
@@ -64,12 +71,15 @@ class GermanTextStorage(TextStorage):
         self.strategy_2_name = 'Markt um x-% gefallen (inkl. maximale Wartezeit)'
         self.strategy_1_description = 'Warten bis der Markt um x-% gefallen ist'
         self.strategy_2_description = """Warten bis der Markt um x-% gefallen ist (nach n-Monaten trotzdem investieren, 
-        auch wenn der Markt noch keine x-% gefallen)"""
+        auch wenn der Markt noch keine x-% gefallen ist)"""
         self.down_percent_description = 'Wie stark soll der Markt im Vergleich zum Startwert gefallen sein, damit investiert wird (in %)?'
         self.max_months_description = 'Wie viele Monate soll maximal gewartet werden, bevor investiert wird?'
+        self.investment_horizon = 'Dauer des Investments'
+        self.years = 'Jahre'
         self.average_return_text = 'Durchschnittliche Rendite (pro Jahr) der Strategie: '
         self.confidence_interval_part_1 = ' [95% der Renditen zwischen '
         self.confidence_interval_part_2 = ' und '
         self.average_days_text = 'Durchschnittliche Wartezeit (in Tagen) bevor investiert wurde: '
         self.not_invested_share_text = 'Anteil der Fälle, in denen innerhalb des festgelegten Zeitraums nicht investiert wurde: '
+        self.run_button_text = 'Strategie testen'
        

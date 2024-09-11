@@ -2,6 +2,7 @@ import polars as pl
 
 from config import THOUSAND_SEP, DATE_FORMAT
 from src.trading_strategy import TradingStrategy
+from src import utils
 
 
 def import_historical_quote_data(path='daily_msci_world_2012.csv')->pl.DataFrame:
@@ -57,27 +58,36 @@ def calculate_total_return_from_df(quotes_df:pl.DataFrame, date_df:pl.DataFrame,
     
     return date_df
 
-def run_strategy_for_multiple_start_dates(quotes_df:pl.DataFrame, start_dates:list, end_date:str, strategy_dict:str):
+def run_strategy_for_multiple_start_dates(quotes_df:pl.DataFrame, start_dates:list, end_dates:list, strategy_dict:str)->list[dict]:
     
-    # Instantiate trading strategy objects for all start dates
-    all_trading_strategies = [TradingStrategy(quotes_df, start_date=x, end_date=end_date) for x in start_dates]
+    # Instantiate trading strategy objects for all start and end dates
+    all_trading_strategies = [TradingStrategy(quotes_df, start_date=start_date, end_date=end_date) 
+                              for start_date, end_date in zip(start_dates, end_dates)]
+    
+    # Drop strategies without an end date (as none was found in the df that fit the criteria)
+    all_trading_strategies = [strat for strat in all_trading_strategies if strat.end_date]
     
     # Choose strategy method accroding to input 
     strategy = strategy_dict['strategy']
+    percent = strategy_dict['percent']
+    months = strategy_dict['months']
     match strategy:
         case 'down_percent_pure':
-            percent = strategy_dict['percent']
-            investment_dates = [strategy.down_percent_pure(percent=percent) 
+            strategy_dates = [{
+                'start_date':strategy.start_date,
+                'investment_date':strategy.down_percent_pure(percent=percent),
+                'end_date':strategy.end_date} 
                                 for strategy in all_trading_strategies]
         case 'down_percent_max_n_months':
-            percent = strategy_dict['percent']
-            months = strategy_dict['months']
-            investment_dates = [strategy.down_percent_max_n_months(percent=percent, months=months) 
+            strategy_dates = [{
+                'start_date':strategy.start_date,
+                'investment_date':strategy.down_percent_max_n_months(percent=percent, months=months),
+                'end_date':strategy.end_date} 
                                 for strategy in all_trading_strategies]
         case _:
             raise ValueError(f'Strategy {strategy} not defined!')
         
-    return investment_dates
+    return strategy_dates
 
 def get_strategy_results(quotes_df:pl.DataFrame, strategy_dict:dict)->pl.DataFrame:
     
@@ -85,15 +95,17 @@ def get_strategy_results(quotes_df:pl.DataFrame, strategy_dict:dict)->pl.DataFra
     end_date = quotes_df['Date'].max().strftime(DATE_FORMAT)
     all_start_dates = [x.strftime(DATE_FORMAT) for x in quotes_df['Date'].unique().to_list()]
     
+    # If an investment horizon is specified, set end dates to start date + investment horizon
+    if strategy_dict['investment_horizon'] != 0:
+        end_dates = [utils.add_n_years_to_date(start_date, strategy_dict['investment_horizon']) for start_date in all_start_dates]
+    else:
+        end_dates = [end_date]*len(all_start_dates)
+    
     # Run strategy for all start days
-    investment_dates = run_strategy_for_multiple_start_dates(quotes_df, all_start_dates, end_date, strategy_dict)
+    strategy_date_dicts = run_strategy_for_multiple_start_dates(quotes_df, all_start_dates, end_dates, strategy_dict)
     
     # Create df from results
-    strategy_result_df = (pl.from_dict(
-        {'start_date':all_start_dates,
-          'end_date':[end_date]*len(all_start_dates),
-          'investment_date':investment_dates,
-          })
+    strategy_result_df = (pl.from_dicts(strategy_date_dicts)
         .with_columns([
             pl.col('start_date').str.strptime(pl.Date, DATE_FORMAT),
             pl.col('investment_date').str.strptime(pl.Date, DATE_FORMAT),
@@ -121,7 +133,12 @@ def calculate_non_invested_percentage(strategy_result_df:pl.DataFrame)->float:
     
     return non_invested_perc
 
-def run(strategy_dict:dict, quotes_df:pl.DataFrame)->dict:
+def run(strategy_dict:dict)->dict:
+    
+    # Read in data
+    quotes_df = import_historical_quote_data(strategy_dict['file'])
+    quotes_df = quotes_df.filter((pl.col('Date').dt.year() >= strategy_dict['min_year'])
+                               & (pl.col('Date').dt.year() <= strategy_dict['max_year']))
     
     # Run strategy to determine investment dates
     strategy_dates_df = get_strategy_results(quotes_df, strategy_dict)
