@@ -22,7 +22,7 @@ class TradingStrategy():
         """
         start_price = utils.get_price_of_day(self.df, self.start_date, price_type='Close')
         buy_threshold = start_price - (percent/100)*start_price
-        buy_date_df = self.df.filter((pl.col('Low') <= buy_threshold)&(pl.col('Date')>=utils.get_polars_date_from_str(self.start_date)))
+        buy_date_df = self.df.filter((pl.col('Close') <= buy_threshold)&(pl.col('Date')>=utils.get_polars_date_from_str(self.start_date)))
         buy_date_df = buy_date_df.filter(pl.col('Date') == pl.col('Date').min())
         
         if buy_date_df.is_empty():

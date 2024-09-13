@@ -2,6 +2,7 @@ import altair as alt
 import polars as pl
 import streamlit as st
 
+from db import db_funcs
 import src.main as main
 from data.texts import GermanTextStorage, EnglishTextStorage
 
@@ -22,24 +23,21 @@ else:
 st.title(text_store.title)
 
 # USER INTERACTION: Select Index & language to use
-index_file_mapping = {
-    'MSCI World':'data/daily_msci_world.csv',
-    'DAX 40':'data/daily_DAX.csv',
-    'S&P500':'data/daily_S&P500.csv',
-    'NASDAQ 100':'data/daily_NASDAQ.csv',
-}
+indices_available = ['MSCI World','DAX','S&P500','NASDAQ']
 left, _, right = st.columns(3, vertical_alignment="bottom")
 german_language = left.toggle(
     ':de:',
     key='german_language')
 index_chosen = right.selectbox(
     text_store.index_choice_label,
-    list(index_file_mapping.keys()),
+    indices_available,
 )
 
-# Visualize data
-path = index_file_mapping[index_chosen]
-quote_data = main.import_historical_quote_data(path)
+# Load data from DB
+quote_data = db_funcs.get_price_data_by_index(index_chosen).rename({'date':'Date', 'closing_price':'Close'})
+
+# Normalize index levels to start at 100
+quote_data = main.normalize_prices(quote_data)
 
 # USER INTERACTION: Add possibility to slice the date range
 min_year = quote_data['Date'].min().year
@@ -96,7 +94,7 @@ match strategy_chosen:
 
 # Compile inputs in dict
 strategy_dict = {
-    'file':path,
+    'index':index_chosen,
     'min_year':st.session_state['date_tuple'][0],
     'max_year':st.session_state['date_tuple'][1],
     'strategy':strategy,

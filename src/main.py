@@ -1,11 +1,21 @@
 import polars as pl
 
 from config import THOUSAND_SEP, DATE_FORMAT
+from db import db_funcs
 from src.trading_strategy import TradingStrategy
 from src import utils
 
 
-def import_historical_quote_data(path='daily_msci_world_2012.csv')->pl.DataFrame:
+def import_historical_quote_data(index='MSCI World')->pl.DataFrame:
+    
+    # Map index to file
+    index_file_mapping = {
+    'MSCI World':'data/daily_msci_world.csv',
+    'DAX':'data/daily_DAX.csv',
+    'S&P500':'data/daily_S&P500.csv',
+    'NASDAQ':'data/daily_NASDAQ.csv',
+    }
+    path = index_file_mapping[index]
     
     # Read in df
     required_cols = ['Date', 'Close']
@@ -19,19 +29,26 @@ def import_historical_quote_data(path='daily_msci_world_2012.csv')->pl.DataFrame
         ])
     quotes_df = quotes_df.select(all_cols)
     
-    # Cast columns to their correct data types
-    quotes_df = quotes_df.with_columns(pl.col('Date').str.to_date(format=DATE_FORMAT))
-    quotes_df = quotes_df.with_columns([
-        pl.col(price_col).str.replace(THOUSAND_SEP, '').cast(pl.Float64) for price_col in ['Close']+optional_price_cols
-    ])
-    
-    # Normalize prices (set first value to 100)
-    normalization_factor = 100 / quotes_df.filter(pl.col('Date') == pl.col('Date').min())['Close'][0]
-    quotes_df = quotes_df.with_columns(
-        [pl.col(col).mul(normalization_factor) for col in ['Close']+optional_price_cols]    
-    )
-    
+    # Clean df
+    quotes_df = cast_datatypes(quotes_df)
+    quotes_df = normalize_prices(quotes_df)
     return quotes_df
+    
+def cast_datatypes(df:pl.DataFrame):
+    # Cast columns to their correct data types
+    df = df.with_columns(pl.col('Date').str.to_date(format=DATE_FORMAT))
+    df = df.with_columns([
+        pl.col(price_col).str.replace(THOUSAND_SEP, '').cast(pl.Float64) for price_col in ['Close']
+    ])
+    return df
+
+def normalize_prices(df:pl.DataFrame):
+    # Normalize prices (set first value to 100)
+    normalization_factor = 100 / df.filter(pl.col('Date') == pl.col('Date').min())['Close'][0]
+    df = df.with_columns(
+        [pl.col(col).mul(normalization_factor) for col in ['Close']]    
+    )
+    return df
 
 def calculate_total_return_from_df(quotes_df:pl.DataFrame, date_df:pl.DataFrame, price_type='Close')->pl.DataFrame:
     # Add prices to start and investment dates
@@ -136,7 +153,7 @@ def calculate_non_invested_percentage(strategy_result_df:pl.DataFrame)->float:
 def run(strategy_dict:dict)->dict:
     
     # Read in data
-    quotes_df = import_historical_quote_data(strategy_dict['file'])
+    quotes_df = db_funcs.get_price_data_by_index(strategy_dict['index']).rename({'date':'Date', 'closing_price':'Close'})
     quotes_df = quotes_df.filter((pl.col('Date').dt.year() >= strategy_dict['min_year'])
                                & (pl.col('Date').dt.year() <= strategy_dict['max_year']))
     
