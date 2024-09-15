@@ -1,6 +1,8 @@
+import bisect
+import datetime
 import polars as pl
 
-from config import THOUSAND_SEP, DATE_FORMAT
+from config import THOUSAND_SEP, DATE_FORMAT, DATE_SEP, MONTH_DAYS
 from db import db_funcs
 from src.trading_strategy import TradingStrategy
 from src import utils
@@ -44,17 +46,67 @@ def normalize_prices(df:pl.DataFrame):
     )
     return df
 
-def calculate_total_return_from_df(quotes_df:pl.DataFrame, date_df:pl.DataFrame, price_type='Close')->pl.DataFrame:
-    # Add prices to start and investment dates
-    date_df = (date_df.join(quotes_df.select(['Date', price_type]), left_on=['investment_date'], right_on=['Date'], how='inner')
-               .rename({price_type:'investment_date_price'}))
-    date_df = (date_df.join(quotes_df.select(['Date', price_type]), left_on=['end_date'], right_on=['Date'], how='inner')
-               .rename({price_type:'end_date_price'}))
+def add_cost_average_strategy_dates(df:pl.DataFrame, all_dates:list, over_n_months:int):
+    """Add n "new_investment_dates" to the df, one new date every month"""
+
+    # Prepare input data
+    all_dates = sorted(all_dates)
+    df = df.sort(by='investment_date')
+    start_dates = df['start_date'].to_list()
+    investment_dates =  df['investment_date'].to_list()
+    end_dates = df['end_date'].to_list()
     
+    investment_date_new_investment_date_dicts = []
+    for i, investment_date in enumerate(investment_dates):
+        investment_date_dict = {}
+        new_investment_dates = []
+        for n in range(0, over_n_months+1):
+            new_investment_date = investment_date + datetime.timedelta(days=n*MONTH_DAYS)
+            new_investment_date_index = bisect.bisect_left(all_dates, new_investment_date)
+            if new_investment_date_index < len(all_dates):
+                if new_investment_date <= end_dates[i]:
+                    new_investment_dates.append(all_dates[new_investment_date_index])
+        investment_date_dict['start_date'] = start_dates[i]
+        investment_date_dict['new_investment_date'] = new_investment_dates
+        investment_date_new_investment_date_dicts.append(investment_date_dict)
+    
+    full_df = pl.from_dicts(investment_date_new_investment_date_dicts).explode('new_investment_date')
+    
+    return full_df
+
+def calculate_total_return_from_df(quotes_df:pl.DataFrame, date_df:pl.DataFrame, strategy_dict:dict)->pl.DataFrame:
+    
+    # Add prices to start and investment dates
+    date_df = (date_df.join(quotes_df.select(['Date', 'Close']), left_on=['investment_date'], right_on=['Date'], how='inner')
+               .rename({'Close':'investment_date_price'}))
+    date_df = (date_df.join(quotes_df.select(['Date', 'Close']), left_on=['end_date'], right_on=['Date'], how='inner')
+               .rename({'Close':'end_date_price'}))
+    
+    # Optionally add investment dates from Cost Average Strategy
+    over_n_months = strategy_dict['cost_average_months']
+    if over_n_months:
+        cost_average_date_df = add_cost_average_strategy_dates(date_df, quotes_df['Date'].to_list(), over_n_months)
+        cost_average_date_df = cost_average_date_df.join(quotes_df.rename({'Date':'new_investment_date', 
+                                                                          'Close':'new_investment_date_price'})
+                                                         .select(['new_investment_date', 'new_investment_date_price']),
+                                                         on='new_investment_date')
+        date_df = date_df.join(cost_average_date_df, how='left', on='start_date')
+    else:
+        date_df = date_df.with_columns([pl.col('investment_date').alias('new_investment_date'),
+                                        pl.col('investment_date_price').alias('new_investment_date_price')])
+        
     # Calculate total return
     date_df = date_df.with_columns([
-        ((pl.col('end_date_price') / pl.col('investment_date_price')-1)*100).round(2).alias('total_return'),
+        ((pl.col('end_date_price') / pl.col('new_investment_date_price')-1)*100).round(2).alias('total_return'),
     ])
+    
+    # Combine returns from same start date (cost average strategy) and calculate (equally weighted) return
+    average_returns_by_start_date = date_df.group_by('start_date').agg(pl.mean('total_return')).sort(by='start_date')
+    date_df = (date_df
+               .drop(['new_investment_date','new_investment_date_price', 'total_return']).unique()
+               .join(average_returns_by_start_date, on='start_date')
+               .sort(by='start_date'))
+    
     
     # Calculate time waited to deploy strategy
     date_df = date_df.with_columns([
@@ -79,31 +131,29 @@ def run_strategy_for_multiple_start_dates(quotes_df:pl.DataFrame, start_dates:li
     all_trading_strategies = [strat for strat in all_trading_strategies if strat.end_date]
     
     # Choose strategy method accroding to input 
-    strategy = strategy_dict['strategy']
-    percent = strategy_dict['percent']
-    months = strategy_dict['months']
-    match strategy:
+    match strategy_dict['strategy']:
         case 'down_percent_pure':
             strategy_dates = [{
                 'start_date':strategy.start_date,
-                'investment_date':strategy.down_percent_pure(percent=percent),
+                'investment_date':strategy.down_percent_pure(percent=strategy_dict['percent']),
                 'end_date':strategy.end_date} 
                                 for strategy in all_trading_strategies]
         case 'down_percent_max_n_months':
             strategy_dates = [{
                 'start_date':strategy.start_date,
-                'investment_date':strategy.down_percent_max_n_months(percent=percent, months=months),
+                'investment_date':strategy.down_percent_max_n_months(percent=strategy_dict['percent'], 
+                                                                     months=strategy_dict['months']),
                 'end_date':strategy.end_date} 
                                 for strategy in all_trading_strategies]
         case _:
-            raise ValueError(f'Strategy {strategy} not defined!')
+            raise ValueError(f'Strategy {strategy_dict["strategy"]} not defined!')
         
     return strategy_dates
 
 def get_strategy_results(quotes_df:pl.DataFrame, strategy_dict:dict)->pl.DataFrame:
     
     # Determine start and end dates
-    end_date = quotes_df['Date'].max().strftime(DATE_FORMAT)
+    max_end_date = quotes_df['Date'].max().strftime(DATE_FORMAT)
     all_start_dates = [x.strftime(DATE_FORMAT) for x in quotes_df['Date'].unique().to_list()]
     
     # If an investment horizon is specified, set end dates to start date + investment horizon
@@ -116,7 +166,7 @@ def get_strategy_results(quotes_df:pl.DataFrame, strategy_dict:dict)->pl.DataFra
             raise ValueError(f'Investment horizon larger than selected period, please adjust!')
         
     else:
-        end_dates = [end_date]*len(all_start_dates)
+        end_dates = [max_end_date]*len(all_start_dates)
     
     # Run strategy for all start days
     strategy_date_dicts = run_strategy_for_multiple_start_dates(quotes_df, all_start_dates, end_dates, strategy_dict)
@@ -161,7 +211,7 @@ def run(strategy_dict:dict)->dict:
     strategy_dates_df = get_strategy_results(quotes_df, strategy_dict)
     
     # Calculate returns
-    strategy_result_df = calculate_total_return_from_df(quotes_df, strategy_dates_df, price_type='Close')
+    strategy_result_df = calculate_total_return_from_df(quotes_df, strategy_dates_df, strategy_dict)
     
     # Calculate average annualized returns
     average_annualized_return_strategy = round(strategy_result_df['annualized_return'].mean(),2)
