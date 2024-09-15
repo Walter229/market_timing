@@ -47,11 +47,11 @@ def plot_index_line_chart()->None:
     st.altair_chart(c, use_container_width=True)
     return
 
-def select_strategy_and_time_horizon()->tuple[str,int]:
+def select_strategy_time_horizon_cost_average()->tuple[str,int]:
     # Set up row elements with two columns
     left, right = st.columns(2, vertical_alignment="top")
     
-    # Chose strategy
+    # Choose strategy
     strategy_chosen = left.radio(text_store.strategy_choice_label,
                             [text_store.strategy_1_name, text_store.strategy_2_name],
                             captions=[
@@ -64,6 +64,7 @@ def select_strategy_and_time_horizon()->tuple[str,int]:
                                   for year in horizon_options}
     investment_horizon_mapping['max'] = 0
 
+    # Choose investment horizon
     default_year_index = list(investment_horizon_mapping.values()).index(10)
     investment_horizon_choice = right.selectbox(
         text_store.investment_horizon,
@@ -71,7 +72,24 @@ def select_strategy_and_time_horizon()->tuple[str,int]:
         index=default_year_index)
     investment_horizon = investment_horizon_mapping[investment_horizon_choice]
     
-    return (strategy_chosen, investment_horizon)
+    # Prepare mapping of cost_average option strings to ints
+    cost_average_options = [3, 6, 12]
+    cost_average_mapping = {f'{months} {text_store.months}':months 
+                                  for months in cost_average_options}
+    cost_average_mapping[text_store.dont_use] = 0
+    cost_average_options_str = list(cost_average_mapping.keys())
+    cost_average_options_str.insert(0, cost_average_options_str.pop(
+        cost_average_options_str.index(text_store.dont_use)))
+    
+    # Choose Cost Average option
+    default_cost_average_index = cost_average_options_str.index(text_store.dont_use)
+    cost_average_choice = right.selectbox(
+        text_store.cost_average,
+        cost_average_options_str,
+        index=default_cost_average_index)
+    cost_average = cost_average_mapping[cost_average_choice]
+    
+    return (strategy_chosen, investment_horizon, cost_average)
 
 def select_strategy_inputs()->tuple[str, int, int]:
     match strategy_chosen:
@@ -123,7 +141,7 @@ plot_index_line_chart()
 st.info(text_store.instructions)
 
 # USER INTERACTION: Choose strategy
-strategy_chosen, investment_horizon = select_strategy_and_time_horizon()
+strategy_chosen, investment_horizon, cost_average = select_strategy_time_horizon_cost_average()
 
 # Get strategy inputs from user
 strategy, down_percent, max_months = select_strategy_inputs()
@@ -136,7 +154,8 @@ strategy_dict = {
     'strategy':strategy,
     'months':max_months,
     'percent':down_percent,
-    'investment_horizon':investment_horizon
+    'investment_horizon':investment_horizon,
+    'cost_average_months':cost_average,
     }
 
 # USER INTERACTION: Upon clicking button, run strategy
