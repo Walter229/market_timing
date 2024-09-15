@@ -37,6 +37,6 @@ def get_price_data_by_index(index:str)->pl.DataFrame:
             ORDER BY date
             """
     results = execute_sql_select_query(query)
-    result_df = pl.from_pandas(pd.DataFrame(results))
+    result_df = pl.from_pandas(pd.DataFrame(results)).rename({'date':'Date', 'closing_price':'Close'})
     
     return result_df

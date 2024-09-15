@@ -19,19 +19,13 @@ def import_historical_quote_data(index='MSCI World')->pl.DataFrame:
     
     # Read in df
     required_cols = ['Date', 'Close']
-    optional_price_cols = ['Open', 'High', 'Low']
-    all_cols = required_cols + optional_price_cols
     quotes_df = pl.read_csv(path, infer_schema_length=0)
+    quotes_df = quotes_df.select(required_cols)
     
-    # For optional price cols ('Open', 'High', 'Low'), check if available, else copy from 'Close'
-    quotes_df = quotes_df.with_columns([
-        pl.col('Close').alias(col) for col in optional_price_cols if col not in quotes_df.columns
-        ])
-    quotes_df = quotes_df.select(all_cols)
-    
-    # Clean df
+    # Clean df by casting datatypes and normalizing prices
     quotes_df = cast_datatypes(quotes_df)
     quotes_df = normalize_prices(quotes_df)
+    
     return quotes_df
     
 def cast_datatypes(df:pl.DataFrame):
@@ -115,6 +109,12 @@ def get_strategy_results(quotes_df:pl.DataFrame, strategy_dict:dict)->pl.DataFra
     # If an investment horizon is specified, set end dates to start date + investment horizon
     if strategy_dict['investment_horizon'] != 0:
         end_dates = [utils.add_n_years_to_date(start_date, strategy_dict['investment_horizon']) for start_date in all_start_dates]
+        
+        # Check that at least one end date is in the selected timeframe, catch cases where investment horizon > selected timeframe
+        end_dates_in_df = [utils.find_next_date_in_df(quotes_df, date=date) for date in end_dates]
+        if not any(end_dates_in_df):
+            raise ValueError(f'Investment horizon larger than selected period, please adjust!')
+        
     else:
         end_dates = [end_date]*len(all_start_dates)
     
@@ -153,7 +153,7 @@ def calculate_non_invested_percentage(strategy_result_df:pl.DataFrame)->float:
 def run(strategy_dict:dict)->dict:
     
     # Read in data
-    quotes_df = db_funcs.get_price_data_by_index(strategy_dict['index']).rename({'date':'Date', 'closing_price':'Close'})
+    quotes_df = import_historical_quote_data(strategy_dict['index'])
     quotes_df = quotes_df.filter((pl.col('Date').dt.year() >= strategy_dict['min_year'])
                                & (pl.col('Date').dt.year() <= strategy_dict['max_year']))
     

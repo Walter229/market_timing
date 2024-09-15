@@ -3,7 +3,7 @@ import polars as pl
 
 from config import DATE_SEP, DATE_FORMAT
 
-def find_next_date_in_df(df:pl.DataFrame, date:str, investment_horizon=0)->str:
+def find_next_date_in_df(df:pl.DataFrame, date:str)->str:
     pl_date = pl.date(*(int(x) for x in date.split(DATE_SEP)))
     relevant_dates = df.filter(pl.col('Date') >= pl_date)
     next_date_df = relevant_dates.select(pl.col('Date').min())
