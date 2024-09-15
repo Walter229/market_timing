@@ -7,7 +7,8 @@ def create_sqlalchemy_engine()->sqlalchemy.Engine:
     from sqlalchemy import create_engine
     
     db_password = st.secrets['DB_PASSWORD']
-    db_uri = f'postgresql://postgres.hnuquqxfgmjpsazgwzgy:{db_password}@aws-0-eu-central-1.pooler.supabase.com:6543/postgres'
+    db_adress = st.secrets['DB_ADRESS']
+    db_uri = f'postgresql://{db_adress}:{db_password}@aws-0-eu-central-1.pooler.supabase.com:6543/postgres'
     engine = create_engine(db_uri)
     
     return engine
