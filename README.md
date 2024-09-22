@@ -30,4 +30,3 @@ After running the simulation, users can view:
 4. **View Results**: Analyze the results in the chart and table format, including key metrics like annualized returns and days waited before investing.
 5. **Save Results**: Click on the download icon on the table to save the results as a CSV.
 
-This tool is designed for those interested in understanding the potential outcomes of different market timing strategies, providing data-driven insights based on historical performance.
