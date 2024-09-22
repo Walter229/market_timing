@@ -110,9 +110,15 @@ def select_strategy_inputs()->tuple[int, int]:
     return (down_percent, max_months)
 
 def display_results()->None:
-    st.write((text_store.average_return_text + '**' + str(result_dict["average_annualized_return"]) + '%**'
-            + '  \n '+ text_store.confidence_interval_part_1 + '**' + str(result_dict["bottom_pctile"]) + '%** ' 
-            + text_store.confidence_interval_part_2 + '**' + str(result_dict["top_pctile"]) + '%**]'))
+    
+    # Color positive returns green, negative ones red
+    return_color = 'green' if result_dict["average_annualized_return"]>=0 else 'red'
+    bottom_color = 'green' if result_dict["bottom_pctile"]>=0 else 'red'
+    top_color = 'green' if result_dict["top_pctile"]>=0 else 'red'
+    
+    st.write((text_store.average_return_text + f'**:{return_color}[' + str(result_dict["average_annualized_return"]) + '%]**'
+            + '  \n '+ text_store.confidence_interval_part_1 + f'**:{bottom_color}[' + str(result_dict["bottom_pctile"]) + '%]** ' 
+            + text_store.confidence_interval_part_2 + f'**:{top_color}[' + str(result_dict["top_pctile"]) + '%]** '))
     st.write(text_store.average_days_text + '**' + str(result_dict["average_days_waited"]) + '**')
     st.write(text_store.not_invested_share_text + '**' + str(result_dict["perc_not_invested"]) + '%**')
     return
@@ -130,7 +136,10 @@ def create_result_df(input_dict={}, output_dict={})->pl.DataFrame:
         '% return per year': output_dict['average_annualized_return'],
         'average days waited': output_dict['average_days_waited'],
         '% not invested': output_dict['perc_not_invested'],
-        '95% return interval': str(output_dict['bottom_pctile']) + ' : ' + str(output_dict['top_pctile'])
+        '90% return interval': str(output_dict['bottom_pctile']) + ' : ' + str(output_dict['top_pctile']),
+        'min return (%)':str(output_dict['min']),
+        'max return (%)':str(output_dict['max']),
+        'return std (%)': str(output_dict['std']),
     }
     
     result_df = pl.from_dict(result_df_dict)

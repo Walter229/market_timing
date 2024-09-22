@@ -62,13 +62,13 @@ class EnglishTextStorage(TextStorage):
         self.years = 'year(s)'
         self.months = 'month(s)'
         self.average_return_text = 'Average return (per year) of your strategy: '
-        self.confidence_interval_part_1 = ' [95% of returns between '
+        self.confidence_interval_part_1 = ' 90% of returns between '
         self.confidence_interval_part_2 = ' and '
         self.average_days_text = 'Average number of days waited before investing: '
-        self.not_invested_share_text = 'Share of cases that did not invest within set period: '
+        self.not_invested_share_text = 'Share of cases that did not invest within set period (because the selected investment criterion was never met): '
         self.run_button_text = 'Run strategy'
         self.strategy_results = 'Current strategy results:'
-        self.all_results = 'All results'
+        self.all_results = 'All results:'
         self.clear_button = 'Clear table'
         
 class GermanTextStorage(TextStorage):
@@ -81,11 +81,9 @@ class GermanTextStorage(TextStorage):
         self.chart_y_axis = 'Index Level (normalisiert)'
         self.chart_x_axis = 'Jahr'
         self.instructions = '''Im Folgenden ist es möglich, eine einfache Anlagestrategie aufzustellen und zu testen, 
-        wie gut diese in der Vergangenheit performt hätte.  \n Aktuell gibt es die Möglichkeit, die Investition 
-        zurückzuhalten, bis der Markt um x-% gefallen ist. Optional lässt sich zusätzlich eine maximale 
-        Zeitspanne angeben, bevor trotzdem investiert werden soll (auch wenn der Markt der Eingabe entsprechend 
-        noch nicht genug gefallen ist).  \n Weitere Einstellungen ermöglichen das Festlegen der Dauer des Investments 
-        sowie die Möglichkeit das Investment mit mehreren Teilinvestments über einen definierten Zeitraum zu strecken.'''
+        wie gut diese in der Vergangenheit performt hätte.  \n Die ausgewählte Strategie wird für alle Einstiegsmöglichkeiten in dem 
+        gewählten Betrachtungszeitraum angewand und es wird jeweils die theoretisch erzielte Rendite berechnet. Anschließend wird die durchschnittliche
+        Rendite (sowie einige andere Kennzahlen) aller Investitionszeiträume bestimmt und ausgegeben.'''
         self.strategy_choice_label = 'Wähle eine Investment Strategie:'
         self.strategy_1_name = 'Markt um x-% gefallen'
         self.strategy_2_name = 'Markt um x-% gefallen (inkl. maximale Wartezeit)'
@@ -103,12 +101,12 @@ class GermanTextStorage(TextStorage):
         self.years = 'Jahr(e)'
         self.months = 'Monat(e)'
         self.average_return_text = 'Durchschnittliche Rendite (pro Jahr) der Strategie: '
-        self.confidence_interval_part_1 = ' [95% der Renditen zwischen '
+        self.confidence_interval_part_1 = ' 90% der Renditen zwischen '
         self.confidence_interval_part_2 = ' und '
         self.average_days_text = 'Durchschnittliche Wartezeit (in Tagen) bevor investiert wurde: '
-        self.not_invested_share_text = 'Anteil der Fälle, in denen innerhalb des festgelegten Zeitraums nicht investiert wurde: '
+        self.not_invested_share_text = 'Anteil der Fälle, in denen innerhalb des festgelegten Zeitraums nicht investiert wurde (da das gewählte Investmentkriterium nie erreicht wurde): '
         self.run_button_text = 'Strategie testen'
         self.strategy_results = 'Ergebnis der aktuellen Strategie:'
-        self.all_results = 'Alle Ergebnisse'
+        self.all_results = 'Alle Ergebnisse:'
         self.clear_button = 'Tabelle zurücksetzen'
        
