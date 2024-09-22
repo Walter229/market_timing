@@ -6,7 +6,7 @@ import streamlit as st
 from config import THOUSAND_SEP, DATE_FORMAT, DATE_SEP, MONTH_DAYS
 from db import db_funcs
 from src import utils
-from src.caching import disk_cached
+from src.caching import disk_cached_write
 from src.trading_strategy import TradingStrategy
 
 
@@ -192,7 +192,7 @@ def calculate_non_invested_percentage(strategy_result_df:pl.DataFrame)->float:
     
     return non_invested_perc
 
-@disk_cached
+@disk_cached_write
 def run(strategy_dict:dict)->dict:
     
     # Read in data
