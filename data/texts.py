@@ -13,7 +13,9 @@ class TextStorage():
     down_percent_description:str
     max_months_description:str
     investment_horizon:str
+    investment_horizon_help:str
     cost_average:str
+    cost_average_help:str
     dont_use:str
     years:str
     months:str
@@ -23,8 +25,10 @@ class TextStorage():
     average_days_text:str
     not_invested_share_text:str
     run_button_text:str
-
-            
+    strategy_results:str
+    all_results:str
+    clear_button:str
+           
 class EnglishTextStorage(TextStorage):
     def __init__(self) -> None:
         super().__init__()
@@ -49,7 +53,9 @@ class EnglishTextStorage(TextStorage):
         self.down_percent_description = 'How much should the market fall compared to the initial index level before you invest (in %)?'
         self.max_months_description = 'How many months do you want to wait at most before investing?'
         self.investment_horizon = 'Investment horizon'
+        self.investment_horizon_help = 'How many years do you want to invest? ("max" = for each investment date, the maximum duration until the last date available is considered)'
         self.cost_average = 'Spread across n months (Cost Average Investing)'
+        self.cost_average_help = 'The investment is split into n parts, where 1/n of the total is invested every month (for the next n months)'
         self.dont_use = 'do not use'
         self.years = 'years'
         self.months = 'months'
@@ -59,6 +65,9 @@ class EnglishTextStorage(TextStorage):
         self.average_days_text = 'Average number of days waited before investing: '
         self.not_invested_share_text = 'Share of cases that did not invest within set period: '
         self.run_button_text = 'Run strategy'
+        self.strategy_results = 'Current strategy results:'
+        self.all_results = 'All results'
+        self.clear_button = 'Clear table'
         
 class GermanTextStorage(TextStorage):
     def __init__(self) -> None:
@@ -84,7 +93,9 @@ class GermanTextStorage(TextStorage):
         self.down_percent_description = 'Wie stark soll der Markt im Vergleich zum Startwert gefallen sein, damit investiert wird (in %)?'
         self.max_months_description = 'Wie viele Monate soll maximal gewartet werden, bevor investiert wird?'
         self.investment_horizon = 'Dauer des Investments'
+        self.investment_horizon_help = 'Anzahl der Jahre für die investiert wird ("max" = für jedes Einstiegsdatum wird der maximale Zeitraum bis zum letzten verfügbaren Datum betrachtet)'
         self.cost_average = 'Investment auf n Monate verteilen (Cost Average Investing)'
+        self.cost_average_help = 'Das Investment wird in n Teile unterteilt, von denen jeweils ein Teil pro Monat investiert wird (für die folgenden n Monate)'
         self.dont_use = 'Nicht nutzen'
         self.years = 'Jahre'
         self.months = 'Monate'
@@ -94,4 +105,7 @@ class GermanTextStorage(TextStorage):
         self.average_days_text = 'Durchschnittliche Wartezeit (in Tagen) bevor investiert wurde: '
         self.not_invested_share_text = 'Anteil der Fälle, in denen innerhalb des festgelegten Zeitraums nicht investiert wurde: '
         self.run_button_text = 'Strategie testen'
+        self.strategy_results = 'Ergebnis der aktuellen Strategie:'
+        self.all_results = 'Alle Ergebnisse'
+        self.clear_button = 'Tabelle zurücksetzen'
        

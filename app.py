@@ -3,7 +3,6 @@ from great_tables import loc, style
 import polars as pl
 import streamlit as st
 
-from db import db_funcs
 import src.main as main
 from data.texts import GermanTextStorage, EnglishTextStorage, TextStorage
 
@@ -70,7 +69,8 @@ def select_strategy_time_horizon_cost_average()->tuple[str,int]:
     investment_horizon_choice = right.selectbox(
         text_store.investment_horizon,
         list(investment_horizon_mapping.keys()),
-        index=default_year_index)
+        index=default_year_index,
+        help=text_store.investment_horizon_help)
     investment_horizon = investment_horizon_mapping[investment_horizon_choice]
     
     # Prepare mapping of cost_average option strings to ints
@@ -87,7 +87,8 @@ def select_strategy_time_horizon_cost_average()->tuple[str,int]:
     cost_average_choice = right.selectbox(
         text_store.cost_average,
         cost_average_options_str,
-        index=default_cost_average_index)
+        index=default_cost_average_index,
+        help=text_store.cost_average_help)
     cost_average = cost_average_mapping[cost_average_choice]
     
     return (strategy_chosen, investment_horizon, cost_average)
@@ -226,18 +227,18 @@ if run_strategy_button:
 if 'result_dict' in st.session_state:
     # Display result text
     st.divider()
-    st.markdown('### Current strategy results')
+    st.markdown(f'### {text_store.strategy_results}')
     result_dict = st.session_state['result_dict']
     display_results()
 
 if 'result_df' in st.session_state:
     # Display table
     st.divider()
-    st.markdown('### All results')
+    st.markdown(f'### {text_store.all_results}')
     st.dataframe(st.session_state['result_df'])
 
-    # Clear results
-    if st.button('Clear table'):
+    # Option to clear results
+    if st.button(text_store.clear_button):
         del st.session_state['result_df']
         del st.session_state['run_counter']
         del st.session_state['result_dict']
