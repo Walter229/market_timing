@@ -1,12 +1,13 @@
 # Market Timing Tool
 
-## Overview
 The **Market Timing Tool** allows users to test simple investment strategies based on historical index data. It provides an interactive experience where users can simulate various market timing strategies, analyze their performance over a given period, and view the results in a clear and insightful manner.
 Users can choose from a timespan between 1969 to 2024 for multiple global indices, including:
 - MSCI World
 - DAX
 - S&P 500
 - NASDAQ
+
+The tool is available in both **English** and **German**
 
 ## **Input**
 The tool supports tweaking the following parameters:
@@ -21,9 +22,6 @@ After running the simulation, users can view:
 - **90% confidence interval** of returns.
 - **Average waiting time** before investing.
 - **Share of cases where no investment** was made due to unmet criteria.
-
-## Multilingual Support
-The tool is available in both **English** and **German**
 
 ## Usage Instructions
 1. **Select Index**: Choose the market index from the dropdown.
