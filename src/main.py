@@ -233,7 +233,6 @@ def run(strategy_dict:dict)->dict:
         'perc_not_invested':perc_not_invested,
         'bottom_pctile':bottom_pctile,
         'top_pctile':top_pctile,
-        'perc_not_invested':perc_not_invested,
     }
     
     return result_dict

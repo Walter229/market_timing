@@ -1,4 +1,5 @@
 import altair as alt
+from great_tables import loc, style
 import polars as pl
 import streamlit as st
 
@@ -105,12 +106,54 @@ def select_strategy_inputs()->tuple[str, int, int]:
     return (strategy, down_percent, max_months)
 
 def display_results()->None:
-    st.write((text_store.average_return_text + str(result_dict["average_annualized_return"]) + '%'
-            + text_store.confidence_interval_part_1 + str(result_dict["bottom_pctile"]) + '% ' 
-            + text_store.confidence_interval_part_2 + str(result_dict["top_pctile"]) + '%]'))
-    st.write(text_store.average_days_text + str(result_dict["average_days_waited"]))
-    st.write(text_store.not_invested_share_text + str(result_dict["perc_not_invested"]) + '%')
+    st.write((text_store.average_return_text + '**' + str(result_dict["average_annualized_return"]) + '%**'
+            + '  \n '+ text_store.confidence_interval_part_1 + '**' + str(result_dict["bottom_pctile"]) + '%** ' 
+            + text_store.confidence_interval_part_2 + '**' + str(result_dict["top_pctile"]) + '%**]'))
+    st.write(text_store.average_days_text + '**' + str(result_dict["average_days_waited"]) + '**')
+    st.write(text_store.not_invested_share_text + '**' + str(result_dict["perc_not_invested"]) + '%**')
     return
+
+def create_result_df(input_dict={}, output_dict={})->pl.DataFrame:
+    
+    result_df_dict = {
+        'run':'',
+        'index':'',
+        'period':'',
+        '% down':'',
+        'max months':'',
+        'investment horizon':'',
+        'cost average months':'',
+        '% return per year':'',
+        'average days waited':'',
+        '% not invested':'',
+        '95% return interval':'',
+    }
+    
+    # If output empty, create empty df
+    if not output_dict:
+        result_df = pl.DataFrame(schema=list(result_df_dict.keys()))
+    else:
+        result_df_dict['run'] = st.session_state['run_counter']
+        result_df_dict['index'] = input_dict['index']
+        result_df_dict['period'] = str(input_dict['min_year']) + '-' + str(input_dict['max_year'])
+        result_df_dict['% down'] = input_dict['percent']
+        result_df_dict['max months'] = input_dict['months']
+        result_df_dict['investment horizon'] = input_dict['investment_horizon']
+        result_df_dict['cost average months'] = input_dict['cost_average_months']
+        result_df_dict['% return per year'] = output_dict['average_annualized_return']
+        result_df_dict['average days waited'] = output_dict['average_days_waited']
+        result_df_dict['% not invested'] = output_dict['perc_not_invested']
+        result_df_dict['95% return interval'] = str(output_dict['bottom_pctile']) + ' : ' + str(output_dict['top_pctile'])
+        result_df = pl.from_dict(result_df_dict)
+    return result_df
+
+def highlight_column(df:pl.DataFrame, column='% return per year'):
+    #TODO: Do via polars styling
+    html_df = df.style.tab_style(
+        style.fill("yellow"),
+        loc.body(columns=column),
+    ).as_raw_html()
+    return html_df
 
 # Read in texts according to language set
 text_store = get_lang_specific_texts()
@@ -158,17 +201,50 @@ strategy_dict = {
     'cost_average_months':cost_average,
     }
 
+# TODO: Add "help" tooltips
+
 # USER INTERACTION: Upon clicking button, run strategy
 run_strategy_button = st.button(text_store.run_button_text)
 if run_strategy_button:
+    if 'run_counter' not in st.session_state:
+        st.session_state['run_counter'] = 1
+    else:
+        st.session_state['run_counter'] += 1
     result_dict = run_strategy(strategy_dict)
-
-    # Display results: 
-    # TODO: Highlight results
-    display_results()
-    
-    # TODO: Add option to use Cost-Average investing in x parts every x months
+    st.session_state['result_dict'] = result_dict
     
     # Display all past results in table
+    new_result_df = create_result_df(strategy_dict, result_dict)
     
+    if 'result_df' not in st.session_state:
+        result_df = new_result_df
+    else:
+        result_df = pl.concat([st.session_state['result_df'], new_result_df], how='vertical_relaxed')
+
+    st.session_state['result_df'] = result_df
+
+if 'result_dict' in st.session_state:
+    # Display results
+    st.divider()
+    st.markdown('### Current strategy results')
+    result_dict = st.session_state['result_dict']
+    display_results()
+
+# empty_result_df = create_result_df()
+# if 'result_df' not in st.session_state:
+#     result_df = empty_result_df
+# else:
+#     result_df = pl.concat([st.session_state['result_df'], empty_result_df], how='vertical_relaxed')
+# st.session_state['result_df'] = result_df
+
+if 'result_df' in st.session_state:
+    st.divider()
+    st.markdown('### All results')
+    st.dataframe(st.session_state['result_df'])
+
     # Clear table
+    if st.button('Clear table'):
+        del st.session_state['result_df']
+        del st.session_state['run_counter']
+        del st.session_state['result_dict']
+        st.rerun()
