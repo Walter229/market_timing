@@ -3,7 +3,6 @@ from great_tables import loc, style
 import polars as pl
 import streamlit as st
 
-from db import db_funcs
 import src.main as main
 from data.texts import GermanTextStorage, EnglishTextStorage, TextStorage
 
@@ -48,29 +47,21 @@ def plot_index_line_chart()->None:
     st.altair_chart(c, use_container_width=True)
     return
 
-def select_strategy_time_horizon_cost_average()->tuple[str,int]:
-    # Set up row elements with two columns
-    left, right = st.columns(2, vertical_alignment="top")
-    
-    # Choose strategy
-    strategy_chosen = left.radio(text_store.strategy_choice_label,
-                            [text_store.strategy_1_name, text_store.strategy_2_name],
-                            captions=[
-            text_store.strategy_1_description,
-            text_store.strategy_2_description,])
+def select_time_horizon_cost_average()->tuple[str,int]:
 
     # Prepare mapping of investment horizon strings to ints
-    horizon_options = [5, 10, 15, 20]
+    horizon_options = [1, 5, 10, 15, 20]
     investment_horizon_mapping = {f'{year} {text_store.years}':year 
                                   for year in horizon_options}
     investment_horizon_mapping['max'] = 0
 
     # Choose investment horizon
     default_year_index = list(investment_horizon_mapping.values()).index(10)
-    investment_horizon_choice = right.selectbox(
+    investment_horizon_choice = st.selectbox(
         text_store.investment_horizon,
         list(investment_horizon_mapping.keys()),
-        index=default_year_index)
+        index=default_year_index,
+        help=text_store.investment_horizon_help)
     investment_horizon = investment_horizon_mapping[investment_horizon_choice]
     
     # Prepare mapping of cost_average option strings to ints
@@ -84,26 +75,39 @@ def select_strategy_time_horizon_cost_average()->tuple[str,int]:
     
     # Choose Cost Average option
     default_cost_average_index = cost_average_options_str.index(text_store.dont_use)
-    cost_average_choice = right.selectbox(
+    cost_average_choice = st.selectbox(
         text_store.cost_average,
         cost_average_options_str,
-        index=default_cost_average_index)
+        index=default_cost_average_index,
+        help=text_store.cost_average_help)
     cost_average = cost_average_mapping[cost_average_choice]
     
-    return (strategy_chosen, investment_horizon, cost_average)
+    return (investment_horizon, cost_average)
 
-def select_strategy_inputs()->tuple[str, int, int]:
-    match strategy_chosen:
-        case text_store.strategy_1_name:
-            strategy = 'down_percent_pure'
-            down_percent = st.number_input(text_store.down_percent_description, 0, 100, 0)
-            max_months = 0
-        
-        case text_store.strategy_2_name:
-            strategy = 'down_percent_max_n_months'
-            down_percent = st.number_input(text_store.down_percent_description, 0, 100, 0)
-            max_months = st.number_input(text_store.max_months_description, 1, 600, 12)
-    return (strategy, down_percent, max_months)
+def select_strategy_inputs()->tuple[int, int]:
+    
+    # Get down percent inputs
+    down_percent = st.number_input(text_store.down_percent_description, 0, 100, 0)
+    
+    # Prepare mapping of max_months option strings to ints
+    max_months_options = [1, 3, 6, 12, 24]
+    max_months_mapping = {f'{months} {text_store.months}':months 
+                                  for months in max_months_options}
+    max_months_mapping[text_store.dont_use] = 0
+    max_months_options_str = list(max_months_mapping.keys())
+    max_months_options_str.insert(0, max_months_options_str.pop(
+        max_months_options_str.index(text_store.dont_use)))
+    
+    # Choose max months option
+    default_max_months_index = max_months_options_str.index(text_store.dont_use)
+    max_months_choice = st.selectbox(
+        text_store.max_months_description,
+        max_months_options_str,
+        index=default_max_months_index
+        )
+    max_months = max_months_mapping[max_months_choice]
+    
+    return (down_percent, max_months)
 
 def display_results()->None:
     st.write((text_store.average_return_text + '**' + str(result_dict["average_annualized_return"]) + '%**'
@@ -114,46 +118,24 @@ def display_results()->None:
     return
 
 def create_result_df(input_dict={}, output_dict={})->pl.DataFrame:
-    
+
     result_df_dict = {
-        'run':'',
-        'index':'',
-        'period':'',
-        '% down':'',
-        'max months':'',
-        'investment horizon':'',
-        'cost average months':'',
-        '% return per year':'',
-        'average days waited':'',
-        '% not invested':'',
-        '95% return interval':'',
+        'run' : st.session_state['run_counter'],
+        'index' : input_dict['index'],
+        'period' : str(input_dict['min_year']) + '-' + str(input_dict['max_year']),
+        '% down' : input_dict['percent'],
+        'max months': input_dict['months'],
+        'investment horizon': input_dict['investment_horizon'],
+        'cost average months': input_dict['cost_average_months'],
+        '% return per year': output_dict['average_annualized_return'],
+        'average days waited': output_dict['average_days_waited'],
+        '% not invested': output_dict['perc_not_invested'],
+        '95% return interval': str(output_dict['bottom_pctile']) + ' : ' + str(output_dict['top_pctile'])
     }
     
-    # If output empty, create empty df
-    if not output_dict:
-        result_df = pl.DataFrame(schema=list(result_df_dict.keys()))
-    else:
-        result_df_dict['run'] = st.session_state['run_counter']
-        result_df_dict['index'] = input_dict['index']
-        result_df_dict['period'] = str(input_dict['min_year']) + '-' + str(input_dict['max_year'])
-        result_df_dict['% down'] = input_dict['percent']
-        result_df_dict['max months'] = input_dict['months']
-        result_df_dict['investment horizon'] = input_dict['investment_horizon']
-        result_df_dict['cost average months'] = input_dict['cost_average_months']
-        result_df_dict['% return per year'] = output_dict['average_annualized_return']
-        result_df_dict['average days waited'] = output_dict['average_days_waited']
-        result_df_dict['% not invested'] = output_dict['perc_not_invested']
-        result_df_dict['95% return interval'] = str(output_dict['bottom_pctile']) + ' : ' + str(output_dict['top_pctile'])
-        result_df = pl.from_dict(result_df_dict)
+    result_df = pl.from_dict(result_df_dict)
+        
     return result_df
-
-def highlight_column(df:pl.DataFrame, column='% return per year'):
-    #TODO: Do via polars styling
-    html_df = df.style.tab_style(
-        style.fill("yellow"),
-        loc.body(columns=column),
-    ).as_raw_html()
-    return html_df
 
 # Read in texts according to language set
 text_store = get_lang_specific_texts()
@@ -161,7 +143,7 @@ text_store = get_lang_specific_texts()
 # Set title of page
 st.title(text_store.title)
 
-# USER INTERACTION: Select Index & language to use
+# Select Index & language to use
 german_language, index_chosen = select_lang_and_index()
 
 # Load data from CSVs
@@ -170,7 +152,7 @@ quote_data = main.import_historical_quote_data(index_chosen)
 # Normalize index levels to start at 100
 quote_data = main.normalize_prices(quote_data)
 
-# USER INTERACTION: Add possibility to slice the date range
+# Add possibility to slice the date range
 add_year_slider()
 
 # Filter dataset according to date range chosen in slider
@@ -183,27 +165,24 @@ plot_index_line_chart()
 # Add instructions
 st.info(text_store.instructions)
 
-# USER INTERACTION: Choose strategy
-strategy_chosen, investment_horizon, cost_average = select_strategy_time_horizon_cost_average()
-
 # Get strategy inputs from user
-strategy, down_percent, max_months = select_strategy_inputs()
+down_percent, max_months = select_strategy_inputs()
+
+# Choose additonal strategy settings
+investment_horizon, cost_average = select_time_horizon_cost_average()
 
 # Compile inputs in dict
 strategy_dict = {
     'index':index_chosen,
     'min_year':st.session_state['date_tuple'][0],
     'max_year':st.session_state['date_tuple'][1],
-    'strategy':strategy,
     'months':max_months,
     'percent':down_percent,
     'investment_horizon':investment_horizon,
     'cost_average_months':cost_average,
     }
 
-# TODO: Add "help" tooltips
-
-# USER INTERACTION: Upon clicking button, run strategy
+# If button clicked, run strategy
 run_strategy_button = st.button(text_store.run_button_text)
 if run_strategy_button:
     if 'run_counter' not in st.session_state:
@@ -226,18 +205,18 @@ if run_strategy_button:
 if 'result_dict' in st.session_state:
     # Display result text
     st.divider()
-    st.markdown('### Current strategy results')
+    st.markdown(f'### {text_store.strategy_results}')
     result_dict = st.session_state['result_dict']
     display_results()
 
 if 'result_df' in st.session_state:
     # Display table
     st.divider()
-    st.markdown('### All results')
+    st.markdown(f'### {text_store.all_results}')
     st.dataframe(st.session_state['result_df'])
 
-    # Clear results
-    if st.button('Clear table'):
+    # Option to clear results
+    if st.button(text_store.clear_button):
         del st.session_state['result_df']
         del st.session_state['run_counter']
         del st.session_state['result_dict']

@@ -131,22 +131,12 @@ def run_strategy_for_multiple_start_dates(quotes_df:pl.DataFrame, start_dates:li
     all_trading_strategies = [strat for strat in all_trading_strategies if strat.end_date]
     
     # Choose strategy method accroding to input 
-    match strategy_dict['strategy']:
-        case 'down_percent_pure':
-            strategy_dates = [{
-                'start_date':strategy.start_date,
-                'investment_date':strategy.down_percent_pure(percent=strategy_dict['percent']),
-                'end_date':strategy.end_date} 
-                                for strategy in all_trading_strategies]
-        case 'down_percent_max_n_months':
-            strategy_dates = [{
-                'start_date':strategy.start_date,
-                'investment_date':strategy.down_percent_max_n_months(percent=strategy_dict['percent'], 
-                                                                     months=strategy_dict['months']),
-                'end_date':strategy.end_date} 
-                                for strategy in all_trading_strategies]
-        case _:
-            raise ValueError(f'Strategy {strategy_dict["strategy"]} not defined!')
+    strategy_dates = [{
+        'start_date':strategy.start_date,
+        'investment_date':strategy.down_percent_max_n_months(percent=strategy_dict['percent'], 
+                                                                months=strategy_dict['months']),
+        'end_date':strategy.end_date} 
+                        for strategy in all_trading_strategies]
         
     return strategy_dates
 
