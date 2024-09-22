@@ -224,25 +224,19 @@ if run_strategy_button:
     st.session_state['result_df'] = result_df
 
 if 'result_dict' in st.session_state:
-    # Display results
+    # Display result text
     st.divider()
     st.markdown('### Current strategy results')
     result_dict = st.session_state['result_dict']
     display_results()
 
-# empty_result_df = create_result_df()
-# if 'result_df' not in st.session_state:
-#     result_df = empty_result_df
-# else:
-#     result_df = pl.concat([st.session_state['result_df'], empty_result_df], how='vertical_relaxed')
-# st.session_state['result_df'] = result_df
-
 if 'result_df' in st.session_state:
+    # Display table
     st.divider()
     st.markdown('### All results')
     st.dataframe(st.session_state['result_df'])
 
-    # Clear table
+    # Clear results
     if st.button('Clear table'):
         del st.session_state['result_df']
         del st.session_state['run_counter']
