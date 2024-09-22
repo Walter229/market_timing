@@ -206,9 +206,9 @@ def run(strategy_dict:dict)->dict:
     # Calculate average annualized returns
     average_annualized_return_strategy = round(strategy_result_df['annualized_return'].mean(),2)
     
-    # Calculate 95%-CI of returns
-    bottom_pctile = round(strategy_result_df['annualized_return'].quantile(0.025),2)
-    top_pctile = round(strategy_result_df['annualized_return'].quantile(0.975),2)
+    # Calculate 90%-CI of returns
+    bottom_pctile = round(strategy_result_df['annualized_return'].quantile(0.05),2)
+    top_pctile = round(strategy_result_df['annualized_return'].quantile(0.95),2)
         
     # Calculate average waiting time
     average_days_waited = int(round(strategy_result_df['days_waited_to_invest'].mean(),0))
@@ -216,6 +216,11 @@ def run(strategy_dict:dict)->dict:
     # Calculate % of cases that did not invest at all over the time
     perc_not_invested = calculate_non_invested_percentage(strategy_result_df)
     
+    # Calculate standard deviation of returns
+    std_returns = round(strategy_result_df['annualized_return'].std(),2)
+    min_return = round(strategy_result_df['annualized_return'].min(),2)
+    max_return = round(strategy_result_df['annualized_return'].max(),2)
+
     # Compile results in dict
     result_dict = {
         'average_annualized_return':average_annualized_return_strategy,
@@ -223,6 +228,9 @@ def run(strategy_dict:dict)->dict:
         'perc_not_invested':perc_not_invested,
         'bottom_pctile':bottom_pctile,
         'top_pctile':top_pctile,
+        'std':std_returns,
+        'min':min_return,
+        'max':max_return,
     }
     
     return result_dict
