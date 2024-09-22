@@ -1,11 +1,13 @@
 import bisect
 import datetime
 import polars as pl
+import streamlit as st
 
 from config import THOUSAND_SEP, DATE_FORMAT, DATE_SEP, MONTH_DAYS
 from db import db_funcs
-from src.trading_strategy import TradingStrategy
 from src import utils
+from src.caching import disk_cached
+from src.trading_strategy import TradingStrategy
 
 
 def import_historical_quote_data(index='MSCI World')->pl.DataFrame:
@@ -190,6 +192,7 @@ def calculate_non_invested_percentage(strategy_result_df:pl.DataFrame)->float:
     
     return non_invested_perc
 
+@disk_cached
 def run(strategy_dict:dict)->dict:
     
     # Read in data
