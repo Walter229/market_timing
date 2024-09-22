@@ -12,6 +12,7 @@ class TextStorage():
     strategy_2_description:str
     down_percent_description:str
     max_months_description:str
+    max_months_default:str
     investment_horizon:str
     investment_horizon_help:str
     cost_average:str
@@ -52,13 +53,14 @@ class EnglishTextStorage(TextStorage):
             invest anyway)"""
         self.down_percent_description = 'How much should the market fall compared to the initial index level before you invest (in %)?'
         self.max_months_description = 'How many months do you want to wait at most before investing?'
+        self.max_months_default = 'no limit'
         self.investment_horizon = 'Investment horizon'
         self.investment_horizon_help = 'How many years do you want to invest? ("max" = for each investment date, the maximum duration until the last date available is considered)'
         self.cost_average = 'Spread across n months (Cost Average Investing)'
         self.cost_average_help = 'The investment is split into n parts, where 1/n of the total is invested every month (for the next n months)'
         self.dont_use = 'do not use'
-        self.years = 'years'
-        self.months = 'months'
+        self.years = 'year(s)'
+        self.months = 'month(s)'
         self.average_return_text = 'Average return (per year) of your strategy: '
         self.confidence_interval_part_1 = ' [95% of returns between '
         self.confidence_interval_part_2 = ' and '
@@ -90,15 +92,16 @@ class GermanTextStorage(TextStorage):
         self.strategy_1_description = 'Warten bis der Markt um x-% gefallen ist'
         self.strategy_2_description = """Warten bis der Markt um x-% gefallen ist (nach n-Monaten trotzdem investieren, 
         auch wenn der Markt noch keine x-% gefallen ist)"""
-        self.down_percent_description = 'Wie stark soll der Markt im Vergleich zum Startwert gefallen sein, damit investiert wird (in %)?'
+        self.down_percent_description = 'Wie viel % soll der Markt im Vergleich zum Startwert gefallen sein, damit investiert wird?'
         self.max_months_description = 'Wie viele Monate soll maximal gewartet werden, bevor investiert wird?'
+        self.max_months_default = 'kein Limit'
         self.investment_horizon = 'Dauer des Investments'
         self.investment_horizon_help = 'Anzahl der Jahre für die investiert wird ("max" = für jedes Einstiegsdatum wird der maximale Zeitraum bis zum letzten verfügbaren Datum betrachtet)'
         self.cost_average = 'Investment auf n Monate verteilen (Cost Average Investing)'
-        self.cost_average_help = 'Das Investment wird in n Teile unterteilt, von denen jeweils ein Teil pro Monat investiert wird (für die folgenden n Monate)'
+        self.cost_average_help = 'Das initiale Investment wird in n Teile unterteilt, von denen jeweils ein Teil pro Monat investiert wird (für die folgenden n Monate)'
         self.dont_use = 'Nicht nutzen'
-        self.years = 'Jahre'
-        self.months = 'Monate'
+        self.years = 'Jahr(e)'
+        self.months = 'Monat(e)'
         self.average_return_text = 'Durchschnittliche Rendite (pro Jahr) der Strategie: '
         self.confidence_interval_part_1 = ' [95% der Renditen zwischen '
         self.confidence_interval_part_2 = ' und '

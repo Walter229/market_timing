@@ -43,16 +43,15 @@ class TradingStrategy():
         """
         # Get earliest date when price drops x percent
         buy_date = self.down_percent_pure(percent)
-        
-        # Check if date is less that n months after start date
-        start_buy_day_dif = (datetime.strptime(buy_date,DATE_FORMAT) 
-                             - datetime.strptime(self.start_date,DATE_FORMAT)).days
-        start_buy_month_dif = start_buy_day_dif / MONTH_DAYS
-        
-        # If buy date is more than n months after start date, set buy date to start date + n months
-        if start_buy_month_dif > months:
-            buy_date = (datetime.strptime(self.start_date,DATE_FORMAT) 
-                             + relativedelta(months=+months)).strftime(DATE_FORMAT)
+        if months > 0:
+             # Check if date is less that n months after start date
+            start_buy_day_dif = (datetime.strptime(buy_date,DATE_FORMAT) 
+                                - datetime.strptime(self.start_date,DATE_FORMAT)).days
+            start_buy_month_dif = start_buy_day_dif / MONTH_DAYS
+            # If buy date is more than n months after start date, set buy date to start date + n months
+            if start_buy_month_dif > months:
+                buy_date = (datetime.strptime(self.start_date,DATE_FORMAT) 
+                                + relativedelta(months=+months)).strftime(DATE_FORMAT)
         
         return buy_date
     
