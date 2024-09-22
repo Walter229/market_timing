@@ -116,11 +116,14 @@ def display_results()->None:
     bottom_color = 'green' if result_dict["bottom_pctile"]>=0 else 'red'
     top_color = 'green' if result_dict["top_pctile"]>=0 else 'red'
     
-    st.write((text_store.average_return_text + f'**:{return_color}[' + str(result_dict["average_annualized_return"]) + '%]**'
-            + '  \n '+ text_store.confidence_interval_part_1 + f'**:{bottom_color}[' + str(result_dict["bottom_pctile"]) + '%]** ' 
-            + text_store.confidence_interval_part_2 + f'**:{top_color}[' + str(result_dict["top_pctile"]) + '%]** '))
-    st.write(text_store.average_days_text + '**' + str(result_dict["average_days_waited"]) + '**')
-    st.write(text_store.not_invested_share_text + '**' + str(result_dict["perc_not_invested"]) + '%**')
+    st.write((':chart_with_upwards_trend: ' + text_store.average_return_text + f'**:{return_color}[' 
+              + str(result_dict["average_annualized_return"]) + '%]**' + '  \n '+ text_store.confidence_interval_part_1 
+              + f'**:{bottom_color}[' + str(result_dict["bottom_pctile"]) + '%]** ' 
+              + text_store.confidence_interval_part_2 + f'**:{top_color}[' + str(result_dict["top_pctile"]) + '%]**.'))
+    st.write(':hourglass: ' + text_store.average_days_text + '**' 
+             + str(result_dict["average_days_waited"]) + '**')
+    st.write(':sloth: ' + text_store.not_invested_share_text + '**' 
+             + str(result_dict["perc_not_invested"]) + '%**')
     return
 
 def create_result_df(input_dict={}, output_dict={})->pl.DataFrame:
